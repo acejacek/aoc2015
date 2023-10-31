@@ -5,12 +5,14 @@
 
 int main()
 {
-    FILE* input = fopen(INPUT_FILE, "r");
+    const char filename[] = INPUT_FILE;
+    FILE* input = fopen(filename, "r");
     if (!input)
     {
-        fprintf(stderr, "Cant load file.\n");
+        fprintf(stderr, "Cant load file %s.\n", filename);
         exit(EXIT_FAILURE);
     }
+
     int level = 0;
     int basement = 0;
     int position = 1;
@@ -21,6 +23,7 @@ int main()
 
         if (c == '(') level++;
         else if (c == ')') level--;
+
         if (basement == 0)
             if (level < 0) basement = position;
 
