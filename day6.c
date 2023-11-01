@@ -1,23 +1,36 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 
 #define INPUT_FILE "day6.txt"
 
-bool lights[1000][1000] = { false };
+// uncoment for part 2
+#define PART_TWO 
 
-void set_lights(int x1, int y1, int x2, int y2, bool val)
+int lights[1000][1000] = { 0 };
+
+void set_lights(int x1, int y1, int x2, int y2, int val)
 {
     for (int x = x1; x <= x2; x++)
         for (int y = y1; y <= y2; y++)
+        {
+#ifndef PART_TWO
             lights[x][y] = val;
+#else
+            (val == 1) ? lights[x][y]++ : lights[x][y]-- ;
+            if (lights[x][y] < 0) lights[x][y] = 0; 
+#endif
+        }
 }
 
 void toggle_lights(int x1, int y1, int x2, int y2)
 {
     for (int x = x1; x <= x2; x++)
         for (int y = y1; y <= y2; y++)
-            lights[x][y] = !lights[x][y];
+#ifndef PART_TWO
+            lights[x][y] = !lights[x][y];   // switch
+#else
+            lights[x][y] += 2;              // increase by 2
+#endif
 }
 
 int main()
@@ -45,13 +58,12 @@ int main()
         {   
             case 'n':   // turn ON
                 sscanf(line, "turn on %d,%d through %d,%d", &x1, &y1, &x2, &y2);
-                //printf("Scanned: %d, %d, %d, %d\n", x1, y1, x2, y2);
-                set_lights(x1, y1, x2, y2, true);
+                set_lights(x1, y1, x2, y2, 1);
             break;
 
             case 'f':   // turn OFF
                 sscanf(line, "turn off %d,%d through %d,%d", &x1, &y1, &x2, &y2);
-                set_lights(x1, y1, x2, y2, false);
+                set_lights(x1, y1, x2, y2, 0);
             break;
 
             case ' ':   // toggle            
@@ -72,9 +84,13 @@ int main()
 
     for (int x = 0; x < 1000; x++)
         for (int y = 0; y < 1000; y++)
-            if (lights[x][y]) number++;
+            number += lights[x][y];
 
+#ifndef PART_TWO
     printf("Number of lights lit: %zd\n", number);
+#else
+    printf("Total brightness: %zd\n", number);
+#endif
 
     return 0;
 }
