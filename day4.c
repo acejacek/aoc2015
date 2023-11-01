@@ -15,7 +15,7 @@ int main()
     bool found = false;
     do
     {
-        char key[1000] = "ckczppom";   // secret key
+        char key[1000] = "ckczppom";     // secret key
         char digits[100];
         sprintf(digits, "%d", counter);
         strcat(key, digits);             // prepare input

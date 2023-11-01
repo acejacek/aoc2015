@@ -15,12 +15,11 @@ int main()
 
     char* line = NULL;
     size_t len = 0;
-    ssize_t read = 0;
 
     size_t total_area = 0;
     size_t ribbon = 0;
 
-    while ((read = getline(&line, &len, input)) != -1)
+    while ((getline(&line, &len, input)) != -1)
     {
         int l, w, h;
         sscanf(line, "%dx%dx%d", &l, &w, &h);

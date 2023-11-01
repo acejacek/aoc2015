@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -38,6 +37,22 @@ bool has_no_bad_strings(char* l, size_t len)
     return true;
 }
 
+bool has_two_letters_without_overlapping(char* l, size_t len)
+{
+    for (size_t i = 0; i < len - 3; i++)
+        for (size_t j = i + 2; j < len - 1; ++j)
+            if (l[i] == l[j] && l[i + 1] == l[j + 1]) return true;
+
+    return false;
+}
+
+bool has_letter_that_repeats_with_letter_between(char* l, size_t len)
+{
+    for (size_t i = 0; i < len - 2; i++)
+        if (l[i] == l[i + 2]) return true;
+
+    return false;
+}
 int main()
 {
     const char filename[] = INPUT_FILE;
@@ -52,29 +67,28 @@ int main()
     size_t len = 0;
     ssize_t read = 0;
 
-    int nice = 0;
+    int nice_round1 = 0;
+    int nice_round2 = 0;
 
     while ((read = getline(&line, &len, input)) != -1)
     {
-        //char test[] = "dvszwmarrgswjxmb";
-        //char test[] = "ugknbfddgicrmopn";
-        //char test[] = "jchzalrnumimnmhp";
-        //char test[] = "ytjwhpaylohorvxd";
-        //strcat(line, test); len = strlen(test);
-        if (has_three_vowels(line, len)
-                && has_double_letter(line, len)
-                && has_no_bad_strings(line, len))
-        {
-            nice++;
-            printf("%s", line);
-        }
-        //break;
+        read--;       // cut EOL
+
+        if (has_three_vowels(line, read)
+                && has_double_letter(line, read)
+                && has_no_bad_strings(line, read))
+            nice_round1++;
+
+        if (has_two_letters_without_overlapping(line, read)
+                && has_letter_that_repeats_with_letter_between(line, read))
+            nice_round2++;
     }
 
     fclose(input);
     free(line);
 
-    printf("Nice strings: %d\n", nice);
+    printf("Nice strings for round 1: %d\n", nice_round1);
+    printf("Nice strings for round 2: %d\n", nice_round2);
 
     return 0;
 }

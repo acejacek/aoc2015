@@ -9,11 +9,6 @@ typedef struct {
     int y;
 } position;
 
-typedef struct {
-    position pos;
-    size_t visits;
-} house;
-
 void check_alloc(void* p)
 {
     if (p != NULL) return;
@@ -35,44 +30,50 @@ int main()
     size_t size = 1;
     position pos[2] = { 0 };
 
-    house* houses = (house*) malloc (sizeof (house));
+    position* houses = (position*) malloc (sizeof (position));
     check_alloc (houses);
 
-    houses->pos.x = 0;
-    houses->pos.y = 0;
-    houses->visits = 1;
+    houses->x = 0;
+    houses->y = 0;
 
     int robo = 0;
-
-    while (1)
+    char c;
+    while ((c = fgetc(input)) != '\n') // whole file in oneliner
     {
-        char c = fgetc(input);
-        if (feof(input)) break;
-
-        if (c == '>') pos[robo].x++;
-        if (c == '<') pos[robo].x--;
-        if (c == '^') pos[robo].y--;
-        if (c == 'v') pos[robo].y++;
+        switch (c)
+        {
+          case '>':
+            pos[robo].x++;
+            break;
+          case '<':
+            pos[robo].x--;
+            break;
+          case '^':
+            pos[robo].y--;
+            break;
+          case 'v':
+            pos[robo].y++;
+            break;
+          default:
+            fprintf(stderr, "Unknow direction %c %ld\n", c, size);
+            exit(EXIT_FAILURE);
+        }
 
         bool visited = false;
         int i = 0;
         for (; i < size; ++i)
-            if (houses[i].pos.x == pos[robo].x && houses[i].pos.y == pos[robo].y)
+            if (houses[i].x == pos[robo].x && houses[i].y == pos[robo].y)
             {
                 visited = true;
                 break;
             }
-        if (visited)
-            houses[i].visits++;
-        else
+        if (!visited)
         {
-            houses = (house *) realloc (houses, sizeof (house) * (size + 1));
+            houses = (position *) realloc (houses, sizeof (position) * (++size));
             check_alloc (houses);
 
-            houses[size].pos.x = pos[robo].x;
-            houses[size].pos.y = pos[robo].y;
-            houses[size].visits = 1;
-            size++;
+            houses[size - 1].x = pos[robo].x;
+            houses[size - 1].y = pos[robo].y;
         }
         // uncomment for part 2:
         // if (robo == 1) robo = 0; else robo = 1;
