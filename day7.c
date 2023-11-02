@@ -5,14 +5,18 @@
 
 #define INPUT_FILE "day7.txt"
 
+// uncomment for part 2
+//#define PART_TWO
+#define PART_ONE_RESULT 46065
+
 typedef enum { AND, OR, LSHIFT, RSHIFT, NOT, DIRECT } Function;
 
 typedef struct Node {
     char wire[3];
     Function function;
     unsigned short value;
-    char input_a[3];
-    char input_b[3];
+    char input_a[5];
+    char input_b[5];
     int calculated;
 } Node;
 
@@ -27,19 +31,59 @@ void check_alloc(void* p)
     exit(EXIT_FAILURE);
 }
 
-unsigned short calculate(Node gate)
+unsigned short calculate(char* gate)
 {
-    if (gate.calculated) return gate.value;
-    switch (gate.function)
+    // replace value of wire B with results from part 1
+#ifdef PART_TWO
+    if (strcmp(gate, "b") == 0) return (unsigned short) PART_ONE_RESULT;
+#endif
+
+    if (isdigit(gate[0])) return (unsigned short) atoi(gate); //it's number
+
+    int i = 0;
+    for(; strcmp(node[i].wire, gate) != 0 && i < n; ++i);
+    if (i == n)
+    {
+        fprintf(stderr, "Can't find wire %s\n", gate);
+        exit(EXIT_FAILURE);
+    }
+
+    if (node[i].calculated) return node[i].value;
+
+    switch (node[i].function)
     {
         case DIRECT:
-            gate.value = calculate(
+            node[i].value = calculate(node[i].input_a);
+            break;
 
-    return 0; 
+        case AND:
+            node[i].value = calculate(node[i].input_a) & calculate(node[i].input_b);
+            break;
+
+        case OR:
+            node[i].value = calculate(node[i].input_a) | calculate(node[i].input_b);
+            break;
+
+        case NOT:
+            node[i].value = ~ calculate(node[i].input_a);
+            break;
+
+        case LSHIFT:
+            node[i].value = calculate(node[i].input_a) << atoi(node[i].input_b);
+            break;
+
+        case RSHIFT:
+            node[i].value = calculate(node[i].input_a) >> atoi(node[i].input_b);
+            break;
+
+        default:
+            fprintf(stderr, "Unknown case\n");
+            exit(EXIT_FAILURE);
+    }
+    node[i].calculated = 1;
+
+    return (unsigned short) node[i].value; 
 }
-
-
-
 
 int main()
 {
@@ -72,11 +116,8 @@ int main()
         else
         {
             sscanf(line, "%s %s %s", node[n].input_a, tmp, node[n].input_b);
-            if (strcmp(tmp, "->") == 0) // single input
-            {
-                node[n].input_b[0] = '0';
+            if (strcmp(tmp, "->") == 0)         // single input
                 node[n].function = DIRECT;
-            }
             else if (strcmp(tmp, "AND") == 0)
                 node[n].function = AND;
             else if (strcmp(tmp, "OR") == 0)
@@ -91,28 +132,14 @@ int main()
                 exit(EXIT_FAILURE);
             }
         }
-        printf("wire: %s inp1: %s, inpB: %s instr: %s func: %d\n",
-                node[n].wire, node[n].input_a, node[n].input_b, tmp, node[n].function);
-
-        if (n > 15)  break;
-
         n++;
     }
 
-
-    int i = 0;
-    for(; strcmp(node[i].wire, "a") != 0 && i < n; ++i);
-
-    printf ("found a at %d\n", i);
-
-    calculate(node[i]);
+    printf("Result: %d\n", calculate("a"));
 
     fclose(input);
     free(line);
     free(node);
-
-//    printf("Total area of paper: %zd\n", total_area);
-//    printf("Total length of ribbon: %zd\n", ribbon);
 
     return 0;
 }
