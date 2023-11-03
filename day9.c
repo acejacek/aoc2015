@@ -1,28 +1,30 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
+#include <limits.h>
 
 #define INPUT_FILE "day9.txt"
 
-struct City;
-
 typedef struct Route {
-    struct City* destination;
+    char city_a[20];
+    char city_b[20];
     int distance;
-    struct Route* next;
 } Route;
 
 typedef struct City {
     char name[20];
-    Route* route;
-    int visited;
+    bool visited;
 } City;
-    
-typedef struct Graph {
-    City* city;
-    int elements;
-} Graph;
 
-Graph* graph = NULL;
+Route* route = NULL;
+int routes = 0;
+
+City* city = NULL;
+int cities = 0;
+
+int shortest_distance = INT_MAX;
+int longest_distance = 0;
 
 void check_alloc(void* p)
 {
@@ -32,40 +34,53 @@ void check_alloc(void* p)
     exit(EXIT_FAILURE);
 }
 
-int are_all_cities_visited(void)
+void add_city(char* name)
 {
-    if (graph == NULL) return 0;
+    for (int i = 0; i < cities; ++i)
+        if (strcmp(city[i].name, name) == 0) return; // already in list
 
-    for (int i = 0; i < graph->elements; ++i)
-        if (graph->city[i].visited == 0) return 0;
-
-    return 1;
+    city = realloc(city, sizeof(City) * ++cities);
+    check_alloc(city);
+    city[cities - 1].visited = false;
+    strcpy(city[cities - 1].name, name);
 }
 
-void add_city(char* name, char* dest, int dist)
+bool all_cities_visited(void)
 {
-    if (graph == NULL)
+    for (int i = 0; i < cities; ++i)
+        if (! city[i].visited) return false;
+
+    return true;
+}
+
+void visit(char* name, int distance)
+{
+    int i = 0;
+    for (; i < cities && (strcmp(city[i].name, name) != 0); ++i);
+    if (i == cities)
     {
-        graph = (Graph *) malloc (sizeof(Graph));
-        check_alloc(graph);
-        graph->elements = 0;
+        fprintf(stderr, "Cant find city %s in list.\n", name);
+        exit(EXIT_FAILURE);
     }
 
-    for (int i = 0; i < graph->elements; ++i)
+    if (city[i].visited) return;
+
+    city[i].visited = true;
+
+    if (all_cities_visited())
     {
-        if (strcmp(graph->city[i].name, name) == 0)
-        {
-            // check, if this dest exists
-            Route* r = graph->city[i].route;
-            if (r == NULL)
-            {
-            }
-
-        } 
+        if (shortest_distance > distance) shortest_distance = distance;
+        if (longest_distance < distance) longest_distance = distance;
     }
-        
+    else
+    {
+        for (int j = 0; j < routes; ++j)
+            if (strcmp(route[j].city_a, city[i].name) == 0)
+                visit(route[j].city_b, distance + route[j].distance);
+    }
 
-
+    city[i].visited = false;
+    return;
 }
 
 int main()
@@ -83,21 +98,34 @@ int main()
 
     while ((getline(&line, &len, input)) != -1)
     {
-        char from[20];
-        char to[20];
-        int dist;
+        route = realloc(route, sizeof(Route) * (++routes)); 
+        check_alloc(route);
 
-        sscanf(line, "%s %*s %s %*s %d", from, to, &dist);
+        sscanf(line, "%s %*s %s %*s %d",
+                route[routes - 1].city_a, route[routes - 1].city_b, &route[routes - 1].distance);
        
-        printf("%s, %s, %d\n", from, to, dist);
-        break; 
+        add_city(route[routes - 1].city_a);
+        add_city(route[routes - 1].city_b);
+
+        route = realloc(route, sizeof(Route) * (++routes));  // add symmetric route in opposite direction
+        check_alloc(route);
+
+        strcpy(route[routes - 1].city_a, route[routes - 2].city_b);
+        strcpy(route[routes - 1].city_b, route[routes - 2].city_a);
+        route[routes - 1].distance = route [routes - 2].distance;
     }
 
     fclose(input);
     free(line);
-    free(graph);
 
-    // printf("Total length of ribbon: %zd\n", ribbon);
+    for (int i = 0; i < cities; ++i)           // start recurrently from all cities
+        visit(city[i].name, 0);
+
+    free(route);
+    free(city);
+
+    printf("Shortest distance: %d\n", shortest_distance);
+    printf("Longest distance: %d\n", longest_distance);
 
     return 0;
 }
