@@ -25,6 +25,7 @@ void check_alloc(void* p)
     exit(EXIT_FAILURE);
 }
 
+// iterate array with all possible entries //
 int mixer(int* mix, const int limit, int pos)
 {
     if (pos < 0) return 1;
@@ -67,57 +68,70 @@ int main(void)
                 &ingredient[id].texture,
                 &ingredient[id].calories);
     }
-
-    for (int i = 0; i < id; ++i)
-        printf("%s %d, %d, %d, %d, %d\n",
-           ingredient[i].name,
-           ingredient[i].capacity,
-           ingredient[i].durability,
-           ingredient[i].flavour,
-           ingredient[i].texture,
-           ingredient[i].calories);
-
     const int spoons = 100;
     int best_score = 0;
-    for (int i = 0; i < spoons; ++i)
-    {
-        int capacity = i * ingredient[0].capacity + (spoons - i) * ingredient[1].capacity;
-        if (capacity < 0) capacity = 0;
-
-        int durability = i * ingredient[0].durability + (spoons - i) * ingredient[1].durability;
-        if (durability < 0) durability = 0;
-
-        int flavour = i * ingredient[0].flavour + (spoons - i) * ingredient[1].flavour;
-        if (flavour < 0) flavour = 0;
-
-        int texture = i * ingredient[0].texture + (spoons - i) * ingredient[1].texture;
-        if (texture < 0) texture = 0;
-
-        int score = capacity * durability * flavour * texture;
-        if (best_score < score) best_score = score;
-    }
+    int best_500_cal = 0;
 
     int mix[id];
     for (int i = 0; i < id; ++i)
         mix[i] = 0;
 
-    const int sp = 3;
-
-    while (mixer(mix, sp, id - 1) == 0)
+    while (mixer(mix, spoons, id - 1) == 0)
     {
         int sum = 0;
         for (int i = 0; i < id; ++i)
-        {
-            printf("%d ", mix[i]);
             sum += mix[i];
+        if (sum == spoons)
+        {
+            int capacity = 0;
+            for (int j = 0; j < id; ++j)
+            {
+                capacity += ingredient[j].capacity * mix[j];
+            }
+            if (capacity < 0) capacity = 0;
+
+            int durability = 0;
+            for (int j = 0; j < id; ++j)
+            {
+                durability += ingredient[j].durability * mix[j];
+            }
+            if (durability < 0) durability = 0;
+
+            int flavour = 0;
+            for (int j = 0; j < id; ++j)
+            {
+                flavour += ingredient[j].flavour * mix[j];
+            }
+            if (flavour < 0) flavour = 0;
+
+            int texture = 0;
+            for (int j = 0; j < id; ++j)
+            {
+                texture += ingredient[j].texture * mix[j];
+            }
+            if (texture < 0) texture = 0;
+
+            int calories = 0;
+            for (int j = 0; j < id; ++j)
+            {
+                calories += ingredient[j].calories * mix[j];
+            }
+
+            int score = capacity * durability * flavour * texture;
+            if (score == 0) continue;
+
+            if (best_score < score) best_score = score;
+            
+            if (calories == 500)
+                if (best_500_cal < score) best_500_cal = score;
         }
-        putchar('\n');
     }
 
     fclose(input);
     free(line);
 
     printf("Best score: %d\n", best_score);
+    printf("Best 500 calories cookie: %d\n", best_500_cal);
 
     free(ingredient);
 
