@@ -3,11 +3,8 @@
 
 #define INPUT_FILE "day15.txt"
 
-typedef enum { RUN, REST } State;
-
 typedef struct
 {
-    char name[20];
     int capacity;
     int durability;
     int flavour;
@@ -28,14 +25,14 @@ void check_alloc(void* p)
 // iterate array with all possible entries //
 int mixer(int* mix, const int limit, int pos)
 {
-    if (pos < 0) return 1;  // all done
+    if (pos < 0) return 0;  // all done
 
     if (++mix[pos] > limit)
     {
         mix[pos] = 0;
-        if (mixer(mix, limit, pos - 1) == 1) return 1;
+        return  mixer(mix, limit, pos - 1);
     }
-    return 0;
+    return 1;
 }
 
 int main(void)
@@ -59,9 +56,7 @@ int main(void)
         ingredient = realloc(ingredient, sizeof(Ingredient) * (id + 1));
         check_alloc(ingredient);
 
-        char change[5];
-        sscanf(line, "%s capacity %d, durability %d, flavor %d, texture %d, calories %d",
-                ingredient[id].name, 
+        sscanf(line, "%*s capacity %d, durability %d, flavor %d, texture %d, calories %d",
                 &ingredient[id].capacity,
                 &ingredient[id].durability,
                 &ingredient[id].flavour,
@@ -77,7 +72,7 @@ int main(void)
     for (int i = 0; i < id; ++i)
         mix[i] = 0;
 
-    while (mixer(mix, spoons, id - 1) == 0)
+    while (mixer(mix, spoons, id - 1))
     {
         int sum = 0;
         for (int i = 0; i < id; ++i)
