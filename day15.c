@@ -28,9 +28,9 @@ void check_alloc(void* p)
 // iterate array with all possible entries //
 int mixer(int* mix, const int limit, int pos)
 {
-    if (pos < 0) return 1;
-    mix[pos]++;
-    if (mix[pos] > limit)
+    if (pos < 0) return 1;  // all done
+
+    if (++mix[pos] > limit)
     {
         mix[pos] = 0;
         if (mixer(mix, limit, pos - 1) == 1) return 1;
@@ -52,7 +52,7 @@ int main(void)
     size_t len = 0;
     ssize_t read = 0;
 
-    int id = 0;
+    int id;
 
     for (id = 0; (read = getline(&line, &len, input)) != -1; ++id)
     {
@@ -68,6 +68,7 @@ int main(void)
                 &ingredient[id].texture,
                 &ingredient[id].calories);
     }
+
     const int spoons = 100;
     int best_score = 0;
     int best_500_cal = 0;
@@ -81,47 +82,35 @@ int main(void)
         int sum = 0;
         for (int i = 0; i < id; ++i)
             sum += mix[i];
+
         if (sum == spoons)
         {
             int capacity = 0;
             for (int j = 0; j < id; ++j)
-            {
                 capacity += ingredient[j].capacity * mix[j];
-            }
-            if (capacity < 0) capacity = 0;
+            if (capacity < 0) continue; 
 
             int durability = 0;
             for (int j = 0; j < id; ++j)
-            {
                 durability += ingredient[j].durability * mix[j];
-            }
-            if (durability < 0) durability = 0;
+            if (durability < 0) continue;
 
             int flavour = 0;
             for (int j = 0; j < id; ++j)
-            {
                 flavour += ingredient[j].flavour * mix[j];
-            }
-            if (flavour < 0) flavour = 0;
+            if (flavour < 0) continue;
 
             int texture = 0;
             for (int j = 0; j < id; ++j)
-            {
                 texture += ingredient[j].texture * mix[j];
-            }
-            if (texture < 0) texture = 0;
-
-            int calories = 0;
-            for (int j = 0; j < id; ++j)
-            {
-                calories += ingredient[j].calories * mix[j];
-            }
+            if (texture < 0) continue;
 
             int score = capacity * durability * flavour * texture;
-            if (score == 0) continue;
-
             if (best_score < score) best_score = score;
             
+            int calories = 0;
+            for (int j = 0; j < id; ++j)
+                calories += ingredient[j].calories * mix[j];
             if (calories == 500)
                 if (best_500_cal < score) best_500_cal = score;
         }
