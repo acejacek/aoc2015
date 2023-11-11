@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 #include <time.h>
 
-#define INPUT_FILE "day19.txt"
+#define INPUT_FILE "day19.text"
 
 typedef struct
 {
@@ -11,12 +12,14 @@ typedef struct
     char to[20];
 } Replacement;
 
+int replacements = 0;
+
 void check_alloc (void* p)
 {
     if (p != NULL) return;
 
-    fprintf(stderr, "Can't allocate memory!\n");
-    exit(EXIT_FAILURE);
+    fprintf (stderr, "Can't allocate memory!\n");
+    exit (EXIT_FAILURE);
 }
 
 unsigned long hash_func(char* string)
@@ -30,27 +33,29 @@ unsigned long hash_func(char* string)
     return hash;
 }
 
+int min_replacements = INT_MAX;
+
 void shuffle(Replacement* repl, int r)
 {
     if (r < 1) return;
 
-    for (int i = 0; i < r - 1; ++i)
+    for (int i = 0; i < r; ++i)
     {
         int j = i + rand() / (RAND_MAX / (r - i) + 1);
-        Replacement tmp = repl[j];
-        repl[j] = repl [i];
+        Replacement tmp = repl[r];
+        repl[r] = repl [i];
         repl[i] = tmp;
     }
 }
 
-int main(void)
+int main (void)
 {
     const char filename[] = INPUT_FILE;
-    FILE* input = fopen(filename, "r");
+    FILE* input = fopen (filename, "r");
     if (!input)
     {
-        fprintf(stderr, "Cant load file %s.\n", filename);
-        exit(EXIT_FAILURE);
+        fprintf (stderr, "Cant load file %s.\n", filename);
+        exit (EXIT_FAILURE);
     } 
 
     char* line = NULL;
@@ -58,23 +63,22 @@ int main(void)
     ssize_t read = 0;
 
     Replacement* repl = NULL;
-    int replacements;
 
-    for (replacements = 0; (read = getline(&line, &len, input)) > 1; ++replacements)
+    for (replacements = 0; (read = getline (&line, &len, input)) > 1; ++replacements)
     {
-        repl = realloc(repl, sizeof(Replacement) * (replacements + 1));
-        check_alloc(repl);
+        repl = realloc (repl, sizeof(Replacement) * (replacements + 1));
+        check_alloc (repl);
 
         sscanf(line, "%s %*s %s",
                 repl[replacements].from, repl[replacements].to);
     }
 
     // read molecule
-    read = getline(&line, &len, input);
+    read = getline (&line, &len, input);
 
     if (read < 1)
     {
-        fprintf(stderr, "Can't read calibration molecule.\n");
+        fprintf (stderr, "Can't read calibration molecule.\n");
         goto dispose;
     }
 
@@ -95,40 +99,43 @@ int main(void)
                 if (i > 0) strncat(new_molecule_name, line, i);
                 strcat(new_molecule_name, repl[r].to);
                 strcat(new_molecule_name, line + i + len);
-                unsigned long hash = hash_func(new_molecule_name);
+                unsigned long hash = hash_func (new_molecule_name);
 
                 int new = 1;
                 for (int j = 0; j < molecule_counter; ++j)
                     if (new_molecule[j] == hash)
+                    { 
                         new = 0; break;
+                    }
 
                 if (new)
                 {   
-                    new_molecule = realloc(new_molecule, sizeof(unsigned long) * (molecule_counter + 1));
-                    check_alloc(new_molecule);
+                    new_molecule = realloc (new_molecule, sizeof(unsigned long) * (molecule_counter + 1));
+                    check_alloc (new_molecule);
                     new_molecule[molecule_counter++] = hash;
                 }
 
                 i += len - 1; // sometimes "from" is longer that 1 char
             } 
     }
-
     printf("New molecules: %d\n", molecule_counter);
     free(new_molecule);
 
-/* Part 2
- *
- *  based on https://www.reddit.com/r/adventofcode/comments/3xflz8/comment/cy4cu5b/
- *
- * */
+/* Part 2 */
     
     srand(time(NULL));
 
     char target[3000];
     strcpy(target, line);
 
-    int min_replacements = 0;
+    printf("target: %s\n", target);
 
+    for (int r = 0; r < replacements; ++r) 
+    {
+        printf("from %s->%s.\n", repl[r].from, repl[r].to);
+    }
+
+    min_replacements = 0;
     while (strcmp(target, "e") != 0)
     {
         char tmp[strlen(target)];
@@ -142,6 +149,8 @@ int main(void)
                 if (strncmp(repl[r].to, target + i, len) != 0)
                     continue;
 
+                printf("found %s at %d \n", repl[r].to, i);
+
                 char new_molecule_name[strlen(target)];
                 new_molecule_name[0] = '\0';
 
@@ -150,24 +159,27 @@ int main(void)
                 strcat(new_molecule_name, target + i + len);
                 
                 strcpy(target, new_molecule_name);
+                printf("new %s\n", target);
 
                 min_replacements++;
             }
+
         }
-        if (strcmp(target, tmp) == 0) // no progress in reduction
+        if (strcmp(target, tmp) == 0)
         {
             strcpy(target, line);
             min_replacements = 0;
             shuffle(repl, replacements);
+            printf("=== restart \n");
         }
     }
 
     printf("Smallest number of replacements for medicine molecule: %d\n", min_replacements);
 
 dispose:
-    fclose(input);
-    free(line);
-    free(repl);
+    fclose (input);
+    free (line);
+    free (repl);
 
     return 0;
 }
