@@ -123,7 +123,7 @@ int main(void)
     FILE* input = fopen (filename, "r");
     if (!input)
     {
-        fprintf (stderr, "Cant load file %s.\n", filename);
+        fprintf (stderr, "Can't load file %s.\n", filename);
         exit (EXIT_FAILURE);
     } 
 
