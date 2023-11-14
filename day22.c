@@ -96,7 +96,7 @@ bool cast_recharge(Character* a, Character* b)
     return true;
 }
 
-bool apply_active_casts(Character* a, Character* b)
+bool apply_active_spells(Character* a, Character* b)
 {
     if (a->poison_active)
     {
@@ -136,6 +136,15 @@ bool fight(const Character* a, Character* b)
     return false;
 }
 
+void busy(void)
+{
+    static int i = 0;
+    char spinner[4] = { '\\', '|', '/', '-' };
+    printf("%c\b", spinner[i]);
+    fflush(stdout);
+    i = (i + 1) % 4;
+}
+
 int duel(Character* player, Character* boss, const int min_cost)
 {
     player->hit_points = 50;
@@ -147,8 +156,6 @@ int duel(Character* player, Character* boss, const int min_cost)
     player->poison_active = 0;
 
     boss->hit_points = BOSS_HIT_POINTS;
-    boss->damage = BOSS_DAMAGE;
-    boss->armor = 0;
 
     bool (*spell[5])(Character*, Character*);
 
@@ -165,13 +172,13 @@ int duel(Character* player, Character* boss, const int min_cost)
         player->hit_points--;
         if (is_dead(player)) return BOSS;
 #endif
-        // apply active casts
-        if (apply_active_casts(player, boss)) return PLAYER;
+        // apply active spells
+        if (apply_active_spells(player, boss)) return PLAYER;
 
         // player cast a [random] spell
         int cast_nr = rand() % 5;
         int orig_cast_nr = cast_nr;
-        while (!spell[cast_nr](player, boss))   // unsucesfull;
+        while (!spell[cast_nr](player, boss))   // unsucesfull
         {
             cast_nr++;
             cast_nr %= 5;                       // round to 0 after 4
@@ -184,10 +191,11 @@ int duel(Character* player, Character* boss, const int min_cost)
         if (is_dead(boss)) return PLAYER;
 
         // boss turn
-        // apply active casts
-        if (apply_active_casts(player, boss)) return PLAYER;
+        // apply active spells
+        if (apply_active_spells(player, boss)) return PLAYER;
         // boss attacks
         if (fight(boss, player)) return BOSS;
+
     }
 
     return UNDEFINED;
@@ -198,15 +206,20 @@ int main(void)
     srand(time(NULL));
 
     Character boss = { 0 };
+    boss.damage = BOSS_DAMAGE;
+    boss.armor = 0;
+
     Character player = { 0 };
 
     int min_cost = INT_MAX;
 
     for (size_t i = 0; i < 10000000; ++i)             // brute force
+    {
+        if (i % 100000 == 0) busy();
         if (duel(&player, &boss, min_cost) == PLAYER)
             if (min_cost > player.cost) min_cost = player.cost;
-
-    printf("Minimal cost to beat the boss is: %d\n", min_cost);
+    }
+    printf("The least amount of mana to beat the boss is: %d\n", min_cost);
 
     return 0;
 }
