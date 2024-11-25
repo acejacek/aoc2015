@@ -5,47 +5,138 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#define GROUPS 4
+//#define TEST
+
+#ifdef TEST
+#define PACKAGES_COUNT 10
+#else
 #define PACKAGES_COUNT 28
+#endif
 
 typedef struct
 {
-//    int package[PACKAGES];
-    int count;
-    int weight;
-    size_t qe;
-} Group;
+    size_t weight;
+    bool taken;
+} Packages;
 
-bool distribute(int* p, Group* groups, const int target_weight)
+typedef struct list_t {
+    size_t package;
+    struct list_t* next;
+} List;
+
+List* head[GROUPS] = { NULL };
+size_t sum[GROUPS] = { 0 };
+size_t count = 0;
+
+size_t min_qe = SIZE_MAX;
+size_t min_count = INT_MAX;
+
+void llist_push(size_t group, size_t weight)
 {
-    for (int i = 0; i < 3; ++i)
-    {
-        groups[i].count = 0;
-        groups[i].weight = 0;
-    }
-    groups[0].qe = 1;
-
-    int g;
-    for (int i = 0; i < PACKAGES_COUNT; ++i)
-    {
-        g = rand() % 3;
+    List* new = malloc(sizeof(*new));
+    if (!new) exit(1);
     
-        groups[g].weight += p[i];
-        if (groups[g].weight > target_weight)
-            return false;                      // no point to continue
+    new->package = weight;
+    if (head[group])
+        new->next = head[group];
+    else
+        new->next = NULL;
 
-        groups[g].count++;
+    head[group] = new;
 
-        if (g == 0) groups[0].qe *= p[i];
+    if (group == 0) ++count;
+}
+
+void llist_pop(size_t group)
+{
+    if (!head[group]) return;
+
+    List* next = head[group]->next;
+    free(head[group]);
+    head[group] = next;
+
+    if (group == 0) --count;
+}
+
+void llist_print(size_t group)
+{
+    for (List* l = head[group]; l != NULL; l = l->next)
+        printf("%zu ", l->package);
+    putchar('\n');
+}
+
+size_t llist_qe(void)
+{
+    size_t qe = 1;
+    for (List* l = head[0]; l != NULL; l = l->next)
+        qe *= l->package;
+
+    return qe;
+}
+
+void distribute(Packages* p, const size_t target_weight, const size_t start, const size_t group)
+{
+    if (sum[group] == target_weight)
+    {
+        if (group == GROUPS - 1)  // this is 3rd (4th) group set on target. validate it.
+        {
+            if (min_count > count)
+            {
+                min_count = count; // new minimal amount of items in group 0
+                min_qe = SIZE_MAX; // reset QE
+            }
+            
+            if (min_count == count)
+            {
+                size_t qe = llist_qe();
+                if (min_qe > qe)
+                {
+#ifdef TEST
+                    for (size_t i = 0; i < GROUPS; ++i)
+                    {
+                        printf("Group %zu: ", i + 1);
+                        llist_print(i);
+                    }
+#endif
+                    min_qe = qe;
+                    printf("New minimum QE: %zu\n", min_qe);
+                }
+            }
+            return;
+        }
+
+        if (count <= min_count)    // otherwise there is no point to search more
+            distribute(p, target_weight, 0, group + 1);  // this group is fine, search for next one
+                                                         
+        return; 
     }
-    return true;
+
+    for (size_t i = start; i < PACKAGES_COUNT; ++i)
+    {
+        if (p[i].taken) continue;
+
+        sum[group] += p[i].weight;
+
+        if (sum[group] <= target_weight)  // not exceding target weight, continue recursion
+        {
+            llist_push(group, p[i].weight);
+            p[i].taken = true;
+            distribute(p, target_weight, i + 1, group);
+            p[i].taken = false;
+            llist_pop(group);
+        }
+
+        sum[group] -= p[i].weight;
+    }
 }
 
 int main(void)
 {
-    srand(time(NULL));
-
-//    int packages[PACKAGES_COUNT] = { 1, 2, 3, 4, 5, 7, 8, 9, 10, 11 };
-    int packages[PACKAGES_COUNT] = {
+#ifdef TEST
+    size_t p[PACKAGES_COUNT] = { 1, 2, 3, 4, 5, 7, 8, 9, 10, 11 };
+#else
+    size_t p[PACKAGES_COUNT] = {
         1,
         3,
         5,
@@ -73,49 +164,27 @@ int main(void)
         103,
         107,
         109,
-        113
+        113,
     };
+#endif
 
-    int target_weight = 0;
-    for (int i = 0; i < PACKAGES_COUNT; ++i)
-        target_weight += packages[i];
+    Packages packages[PACKAGES_COUNT];
 
-    target_weight /= 3;
-
-    printf("Target: %d\n", target_weight);
-
-    Group groups[3];
-
-    size_t min_qe = SIZE_MAX;
-    int min_count = INT_MAX;
-
-    for (size_t i = 0; i < 1000; ++i)
+    size_t target_weight = 0;
+    for (int i = PACKAGES_COUNT - 1; i >= 0; --i)  // load big first
     {
-        while (1)
-        {
-            if (! distribute(packages, groups, target_weight)) continue;
-
-            // weight
-            if (groups[0].weight != target_weight) continue;
-
-            // quantity
-            if (groups[0].count > groups[1].count) continue;
-            if (groups[0].count > groups[2].count) continue;
-
-            if (min_count >= groups[0].count) break;
-        }
-
-        min_count = groups[0].count;
-
-        if (min_qe > groups[0].qe)
-        {
-            min_qe = groups[0].qe;
-            printf("%ld\n", min_qe);
-        }
+        target_weight += p[i];
+        packages[i].weight = p[i];
+        packages[i].taken = false;
     }
-    
-    printf("Minimum quantum entanglement is: %ld\n", groups[0].qe);
 
+    target_weight /= GROUPS;
+
+    printf("Target: %zu\n", target_weight);
+
+    distribute(packages, target_weight, 0, 0);
+
+    printf("Done.\n");
     return 0;
 }
 
