@@ -1,6 +1,14 @@
+/* Naive algorithm
+ * goes through the list of elements and works out all possible combinations
+ * Performance on i5-6500T CPU @ 2.5 GHz:
+ * case #1 takes 1 min 16 sek
+ * case #2 takes 36 min.
+ * The initial results are visible much earlier.
+ * Calculation is for program to run through all posibilities
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 #include <limits.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -14,8 +22,7 @@
 #define PACKAGES_COUNT 28
 #endif
 
-typedef struct
-{
+typedef struct {
     size_t weight;
     bool taken;
 } Packages;
@@ -29,8 +36,8 @@ List* head[GROUPS] = { NULL };
 size_t sum[GROUPS] = { 0 };
 size_t count = 0;
 
+size_t min_count = SIZE_MAX;
 size_t min_qe = SIZE_MAX;
-size_t min_count = INT_MAX;
 
 void llist_push(size_t group, size_t weight)
 {
@@ -66,6 +73,7 @@ void llist_print(size_t group)
     putchar('\n');
 }
 
+// calculate quantum entanglement
 size_t llist_qe(void)
 {
     size_t qe = 1;
@@ -79,8 +87,9 @@ void distribute(Packages* p, const size_t target_weight, const size_t start, con
 {
     if (sum[group] == target_weight)
     {
-        if (group == GROUPS - 1)  // this is 3rd (4th) group set on target. validate it.
+        if (group == GROUPS - 2)  // I don't need to calculate last group. If first 2 (or 3) are ok, last is also OK.
         {
+            // Now I have all groups set, check, if they are best
             if (min_count > count)
             {
                 min_count = count; // new minimal amount of items in group 0
@@ -89,6 +98,7 @@ void distribute(Packages* p, const size_t target_weight, const size_t start, con
             
             if (min_count == count)
             {
+                // recalculate QE, maybe it's better than last time
                 size_t qe = llist_qe();
                 if (min_qe > qe)
                 {
@@ -112,6 +122,11 @@ void distribute(Packages* p, const size_t target_weight, const size_t start, con
         return; 
     }
 
+    /* Main part of this function.
+     * Take one element, add it to the list and make the element unavailable for other lists.
+     * Check if list fulfills criteria, if yes, recurently run this part until all lists
+     * are populated with correct data. Then remove elemen from the list and put there next one. Repeat.
+     */
     for (size_t i = start; i < PACKAGES_COUNT; ++i)
     {
         if (p[i].taken) continue;
@@ -179,7 +194,6 @@ int main(void)
     }
 
     target_weight /= GROUPS;
-
     printf("Target: %zu\n", target_weight);
 
     distribute(packages, target_weight, 0, 0);
